@@ -6,23 +6,32 @@ import java.util.Random;
 
 public class Board {
 	
-	private int[] queenPos;
+	private Queen[] queens;
 	private final int size;
 	private Random rand;
 	
 	public Board(int size){
 		this.size = size;
-		queenPos= new int[size];
-		
-		
+		queens = new Queen[size];
 		fillBoard();
 	}
 	
+	
+	private void fillBoard(){
+		rand = new Random();
+		for (int i = 0; i < size; i++){
+			queens[i] = new Queen(rand.nextInt(size));
+		}
+	}
+	
+	
+/*	
 	public Board(int[] debugMap){
 		queenPos = debugMap;
 		this.size = queenPos.length;
 	}
-	
+*/
+
 	public String toString(){
 		String mapString = "";
 		String row = "";
@@ -30,9 +39,9 @@ public class Board {
 		// Fills the array with n strings with n zeroes
 		for (int i = 0; i < size; i++) {
 			row = "";
-		
+
 			for (int j = 0; j < size; j++) {
-				if(j == queenPos[i])
+				if(j == queens[i].getPosition())
 					row += "1 ";
 				else row += "0 ";
 			}
@@ -44,53 +53,57 @@ public class Board {
 		return mapString;
 	}
 	
-	
-	private void fillBoard(){
-		rand = new Random();
+	public int getMostViolations(){
+		int mostViolations = queens[0].getViolations();
+		int mostVioRow = 0;
 		
-		for (int i = 0; i < size; i++){
-			queenPos[i] = rand.nextInt(size);	
+		for (int i = 0; i < queens.length; i++) {
+			if(queens[i].getViolations() >= mostViolations){
+				mostViolations = queens[i].getViolations();
+				mostVioRow = i;
+			}
 		}
+		return mostVioRow;
+	}
+	
+	public Queen[] getQueens(){
+		return queens;
 	}
 	
 	// This works
 	public boolean validateAll(){
-		int[] setOfViolations = getAllViolations();
-		int largestViolation =0;
+		updateViolations();
 		
-		for (int i = 0; i < setOfViolations.length; i++) {
-			if(setOfViolations[i] != 0){
+		for (int i = 0; i < queens.length; i++) {
+			if(queens[i].getViolations() != 0){
 				return false;
 			}
 		}
 		return true;
 	}
 	
-	// We are using pair-checking
-	// This method finds violations for all queens and returns an array
-	public int[] getAllViolations(){
-		int queenPosX = 0, queenPosY = 0, violations = 0; 
+	public void updateViolations(){
+		int queenPosX = 0, queenPosY = 0; 
 		int[] tempDomain;
-		int[] returnArray = new int[size];
 
+//		Checks a row. 
 		for (int i = 0; i < size; i++) {
-			violations = 0;
-			queenPosX = queenPos[i];
-
+			queens[i].setViolations(0);
+			queenPosX = queens[i].getPosition();
+			
+//			Checks all the other rows to the row above
 			for (int j = 0; j < size; j++) {
 				if(i == j)
 					continue;
-				queenPosY = queenPos[j];
+				queenPosY = queens[j].getPosition();
 				
 				tempDomain = getDomain(i, j);
 				
 				if(queenPosY == tempDomain[0] || queenPosY == tempDomain[1] || queenPosY == tempDomain[2]){
-					violations++;
+					queens[i].addVoilation();
 				}
 			}
-			returnArray[i] = violations;
 		}
-		return returnArray;
 	}
 	
 	
@@ -98,48 +111,39 @@ public class Board {
 	public int[] getDomain(int xPos, int yPos){
 		int[] domain = new int[3];
 		
-		domain[0] = queenPos[xPos];
-		domain[1] = queenPos[xPos] + Math.abs((xPos-yPos));
-		domain[2] = queenPos[xPos] - Math.abs((xPos-yPos));
+		domain[0] = queens[xPos].getPosition();
+		domain[1] = queens[xPos].getPosition() + Math.abs((xPos-yPos));
+		domain[2] = queens[xPos].getPosition() - Math.abs((xPos-yPos));
 		
-//		Debugprint
-//		System.out.println(domain[0] + " , " + domain[1] + " , " + domain[2]);
 		return domain;
 	}
+	
+	
+//	==================================================================================================
 		
+	
 	public boolean hasRowViolation(int rowToBeInspected){
-		int xPos = rowToBeInspected; 
-		int yPos = 0;
-		int queenPosY = 0;
-		
-		for (int i = 0; i < size; i++) {
-			yPos = i;
-			queenPosY = queenPos[yPos];
-			if(i == rowToBeInspected)
-				continue;
-			int[] tempDomain = getDomain(xPos, yPos);
-			
-			if(queenPosY == tempDomain[0] || queenPosY == tempDomain[1] || queenPosY == tempDomain[2]){
-				return true;
-			}
-		}
-		return false;
+		if(queens[rowToBeInspected].getViolations() == 0)
+			return false;
+		return true;
 	}
 	
 	
 	public void getMinConflicts(int row){
-		int currentQueenPos = queenPos[row];
+		
+		int currentQueenPos = queens[row].getPosition();
 		int smallest = 0;
 		int smallestPos = 0;
+		
 		int[] sortedArray;
 		ArrayList<Integer> positionOfSmallest = new ArrayList<Integer>();
 		
 		int[] estimates = new int[size];
+		
 		for (int i = 0; i < size; i++) {
 			estimates[i] = getViolations(row, i);
 		}
 
-		
 		sortedArray = estimates.clone();
 		Arrays.sort(sortedArray);
 		smallest = sortedArray[0];
@@ -152,14 +156,9 @@ public class Board {
 		// If the list is empty, then the current queen has the best estimate.
 		// If the list is not empty, there are more estimates that are less than or equal to the queen. In this case we should not pick the queen.
 		if(!positionOfSmallest.isEmpty()){
-			moveQueen(row, positionOfSmallest.get(rand.nextInt(positionOfSmallest.size())));
+			moveQueen(row, positionOfSmallest.get(rand.nextInt(positionOfSmallest.size())), smallest);
 		}
 	}
-	
-	public void moveQueen(int row, int newPos){
-		queenPos[row] = newPos;
-	}
-
 	
 	// THIS WORKES JUST FINE
 	// Finds violations for a specific cell - tests this cell with every other queen not in the same cell
@@ -175,7 +174,7 @@ public class Board {
 			if(i == row)
 				continue;
 			yPos = i;
-			queenPosY = queenPos[yPos];
+			queenPosY = queens[yPos].getPosition();
 			
 			int[] tempDomain = getDomainSpecial(xPos, queenPosX, yPos);
 			if(queenPosY == tempDomain[0] || queenPosY == tempDomain[1] || queenPosY == tempDomain[2]){
@@ -184,6 +183,13 @@ public class Board {
 		}
 		return violationCounter;
 	}
+	
+	
+	public void moveQueen(int row, int newPos, int violations){
+		queens[row].setPosition(newPos);
+		queens[row].setViolations(violations);
+	}
+
 	
 	
 	//Super method for special kids
@@ -199,6 +205,6 @@ public class Board {
 	
 		
 	public int getQueenPosByRow(int row){
-		return queenPos[row];
+		return queens[row].getPosition();
 	}
 }

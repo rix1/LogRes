@@ -18,7 +18,7 @@ public class CSP {
 	
 	public static void main(String[] args) {
 		CSP start = new CSP();
-		int n = 8; // This is the size of the board
+		int n = 1000; // This is the size of the board
 		start.theAlgorithm(n);
 	}
 	
@@ -29,13 +29,13 @@ public class CSP {
 		int[] debugBardet = new int[]{2,4,1,3};
 		
 		//
-		Board debug = new Board(debugBardet);
+//		Board debug = new Board(debugBardet);
 		Board test = new Board(boardSize);
 //		System.out.println(test.toString());
 		
-		int[] lol = debug.getAllViolations();
-		printArray(lol);
-		System.out.println(debug.toString());
+//		int[] lol = debug.getAllViolations();
+//		printArray(lol);
+//		System.out.println(debug.toString());
 		System.out.println(test.validateAll());
 /* 
 		violationCheckSpecific()
@@ -55,16 +55,20 @@ public class CSP {
 		
 		int size = s; // Size of n 
 		int iterations = 0;
-		boolean solutionFound = false;
 		int rowToCheck = 0;
 		
 		Board brett = new Board(size);
 		
-		System.out.println("Initial Board of " + size +"x" + size +" pieces :\n" + brett.toString());
+		boolean solutionFound = brett.validateAll();
 		
-		printArray(brett.getAllViolations());
+//		System.out.println("Initial Board of " + size +"x" + size +" pieces :\n" + brett.toString());
+		
+		printArray(brett.getQueens());
+		
 		System.out.println("\n--------------------\n");
+		
 		long test = 0;
+		
 		while(!solutionFound){
 			currentTime = System.currentTimeMillis();
 
@@ -73,16 +77,16 @@ public class CSP {
 				test = currentTime - startTime;
 				test = (long)(test/(Math.pow(10, 3)));
 				System.out.println("Time elapsed: " + (test) +"s");
-				printArray(brett.getAllViolations());
+				
+				printArray(brett.getQueens());
 				System.out.println("Number of iterations: " + iterations+"\n...");
 				tempTime = System.currentTimeMillis();
 			}
 			solutionFound = brett.validateAll();
-			rowToCheck = rand.nextInt(size);
 			
-			if(brett.hasRowViolation(rowToCheck)){
+			
+			rowToCheck = brett.getMostViolations();
 				brett.getMinConflicts(rowToCheck);
-			}
 			iterations++;
 		}
 
@@ -92,17 +96,18 @@ public class CSP {
 		System.out.println("Time elapsed: " + test +"ms");
 //		System.out.print(size+","+test+";");
 		System.out.println(brett.toString());
-		printArray(brett.getAllViolations());
+		printArray(brett.getQueens());
 	}
 	
 	
 	
-	public void printArray(int[] toBePrinted){
+	public void printArray(Queen[] queens){
 		String printString = "";
 		int totalViolations = 0;
-		for (int i = 0; i < toBePrinted.length; i++) {
-			totalViolations += toBePrinted[i];
-			printString += "Q" + (i+1) + " : " + toBePrinted[i] + "\n";
+		
+		for (int i = 0; i < queens.length; i++) {
+			totalViolations += queens[i].getViolations();
+			printString += "Q" + (i+1) + " : " + queens[i].getViolations() + "\n";
 		}
 		System.out.println("Total Violations: " + totalViolations);
 	}
